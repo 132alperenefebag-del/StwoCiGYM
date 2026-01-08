@@ -3767,18 +3767,27 @@ function sendFriendRequest(toUserId) {
     }
     
     const requests = getFriendRequests();
+    
+    // ID'leri string'e çevir (tutarlılık için)
+    const fromIdStr = String(currentUser.id || '');
+    const toIdStr = String(toUserId || '');
+    
     const newRequest = {
         id: Date.now().toString(),
-        fromId: currentUser.id,
-        fromName: currentUser.name,
-        fromEmail: currentUser.email,
+        fromId: fromIdStr,
+        fromName: currentUser.name || '',
+        fromEmail: currentUser.email || '',
         fromPhoto: getProfilePhoto() || '',
-        toId: toUserId,
+        toId: toIdStr,
         timestamp: new Date().toISOString()
     };
     
-    // Zaten bu istek var mı kontrol et
-    const existingRequest = requests.find(r => r.fromId === currentUser.id && r.toId === toUserId);
+    // Zaten bu istek var mı kontrol et (string karşılaştırması ile)
+    const existingRequest = requests.find(r => {
+        const rFromId = String(r.fromId || '');
+        const rToId = String(r.toId || '');
+        return rFromId === fromIdStr && rToId === toIdStr;
+    });
     if (existingRequest) {
         console.warn('⚠️ Bu kullanıcıya zaten istek gönderilmiş');
         return false;
@@ -3791,9 +3800,25 @@ function sendFriendRequest(toUserId) {
     saveFriendRequestsToFirebase(requests);
     
     console.log('✅ Arkadaşlık isteği gönderildi:', newRequest);
-    console.log('📍 Alıcı ID:', toUserId);
-    console.log('📍 Gönderen ID:', currentUser.id);
+    console.log('📍 Alıcı ID:', toIdStr, '(Type:', typeof toIdStr, ')');
+    console.log('📍 Gönderen ID:', fromIdStr, '(Type:', typeof fromIdStr, ')');
     console.log('📍 Toplam istek sayısı:', requests.length);
+    console.log('📍 İstek detayı:', JSON.stringify(newRequest, null, 2));
+    
+    // Firebase'e kaydettikten sonra kısa bir gecikme ile kontrol et
+    setTimeout(() => {
+        loadFriendRequestsFromFirebase((firebaseRequests) => {
+            if (firebaseRequests && Array.isArray(firebaseRequests)) {
+                const savedRequest = firebaseRequests.find(r => r.id === newRequest.id);
+                if (savedRequest) {
+                    console.log('✅ İstek Firebase\'e başarıyla kaydedildi');
+                    console.log('📍 Kaydedilen toId:', savedRequest.toId, '(Type:', typeof savedRequest.toId, ')');
+                } else {
+                    console.warn('⚠️ İstek Firebase\'de bulunamadı!');
+                }
+            }
+        });
+    }, 2000);
     
     return true;
 }
@@ -3848,10 +3873,16 @@ function loadFriendRequestsFromFirebase(callback) {
             if (firebaseRequests && Array.isArray(firebaseRequests)) {
                 console.log('✅ Firebase\'den arkadaşlık istekleri yüklendi:', firebaseRequests.length, 'istek');
                 if (currentUser) {
-                    const myRequests = firebaseRequests.filter(r => r && r.toId === currentUser.id);
+                    // String/number karşılaştırması için toString() kullan
+                    const currentUserId = String(currentUser.id || '');
+                    const myRequests = firebaseRequests.filter(r => {
+                        if (!r || !r.toId) return false;
+                        return String(r.toId) === currentUserId;
+                    });
                     console.log('📍 Bana gelen istekler:', myRequests.length, 'istek');
                     myRequests.forEach(req => {
-                        console.log('  -', req.fromName, '->', req.toId, '(Benim ID:', currentUser.id, ')');
+                        console.log('  -', req.fromName, '(ID:', req.fromId, ') -> Benim ID:', currentUser.id, '| toId:', req.toId);
+                        console.log('    Karşılaştırma:', String(req.toId), '===', currentUserId, '=', String(req.toId) === currentUserId);
                     });
                 }
                 if (callback) callback(firebaseRequests);
@@ -3922,33 +3953,48 @@ function syncFriendRequests() {
                 });
             }
             
+            // Tüm istekleri birleştirilmiş haliyle Firebase'e kaydet (filtrelenmeden önce)
+            const allMergedRequests = Array.from(requestsMap.values());
+            
+            // Firebase'e TÜM istekleri kaydet (eğer değişiklik varsa)
+            const localStr = JSON.stringify(localRequests);
+            const mergedStr = JSON.stringify(allMergedRequests);
+            if (localStr !== mergedStr) {
+                saveFriendRequestsToFirebase(allMergedRequests);
+                console.log('✅ Tüm istekler Firebase\'e kaydedildi:', allMergedRequests.length, 'istek');
+            }
+            
+            // localStorage'a da TÜM istekleri kaydet (UI için değil, veri bütünlüğü için)
+            localStorage.setItem('friendRequests', JSON.stringify(allMergedRequests));
+            
             // Sadece bana gelen ve henüz arkadaş olmadığım kullanıcılardan gelen istekleri göster
-            const finalRequests = Array.from(requestsMap.values()).filter(req => {
+            const finalRequests = allMergedRequests.filter(req => {
+                // String/number karşılaştırması için toString() kullan
+                const reqToId = String(req.toId || '');
+                const currentUserId = String(currentUser.id || '');
+                
                 // Sadece bana gelen istekleri göster
-                if (req.toId !== currentUser.id) {
+                if (reqToId !== currentUserId) {
                     return false;
                 }
                 
                 // Eğer bu kullanıcı zaten arkadaşsa isteği gösterme
-                if (req.fromId && friends.find(f => f.id === req.fromId)) {
-                    console.log('⚠️ Zaten arkadaş, istek gösterilmeyecek:', req.fromId);
+                const reqFromId = String(req.fromId || '');
+                if (reqFromId && friends.find(f => String(f.id || '') === reqFromId)) {
+                    console.log('⚠️ Zaten arkadaş, istek gösterilmeyecek:', reqFromId);
                     return false;
                 }
                 
                 return true;
             });
             
-            // localStorage'ı güncelle
-            localStorage.setItem('friendRequests', JSON.stringify(finalRequests));
+            console.log('📍 Toplam istek sayısı:', allMergedRequests.length);
+            console.log('📍 Bana gelen istek sayısı:', finalRequests.length);
+            finalRequests.forEach(req => {
+                console.log('  - İstek:', req.fromName, '(ID:', req.fromId, ') -> Benim ID:', currentUser.id);
+            });
             
-            // Firebase'e kaydet (eğer değişiklik varsa)
-            const localStr = JSON.stringify(localRequests);
-            const mergedStr = JSON.stringify(finalRequests);
-            if (localStr !== mergedStr) {
-                saveFriendRequestsToFirebase(finalRequests);
-            }
-            
-            // UI'ı güncelle
+            // UI'ı güncelle (sadece bana gelen istekleri göster)
             displayFriendRequests(finalRequests);
         });
     });
@@ -3960,8 +4006,12 @@ function displayFriendRequests(requests) {
     const container = document.getElementById('friendRequestsList');
     if (!container) return;
     
-    // Bana gelen istekler
-    const incomingRequests = requests.filter(r => r && r.toId === currentUser.id);
+    // Bana gelen istekler (zaten filtrelenmiş geliyor ama yine de kontrol edelim)
+    const currentUserId = String(currentUser.id || '');
+    const incomingRequests = requests.filter(r => {
+        if (!r || !r.toId) return false;
+        return String(r.toId) === currentUserId;
+    });
     
     if (incomingRequests.length === 0) {
         container.innerHTML = '<p style="text-align: center; padding: 20px; color: #999;">Henüz arkadaşlık isteği yok.</p>';
@@ -4005,8 +4055,14 @@ function acceptFriendRequest(requestId) {
     const requests = getFriendRequests();
     const request = requests.find(r => r.id === requestId);
     
-    if (!request || request.toId !== currentUser.id) {
+    // String karşılaştırması ile kontrol et
+    const requestToId = String(request?.toId || '');
+    const currentUserId = String(currentUser.id || '');
+    
+    if (!request || requestToId !== currentUserId) {
         console.error('❌ İstek bulunamadı veya bu istek size ait değil');
+        console.error('📍 İstek toId:', requestToId, '| Benim ID:', currentUserId);
+        console.error('📍 İstek detayı:', request);
         return;
     }
     
