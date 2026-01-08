@@ -266,40 +266,74 @@ function syncLocalStorageToFirebase() {
 }
 
 // Kullanıcı kayıt
-function registerUser(name, phone, email, password) {
-    const users = getUsers();
+function registerUser(name, phone, email, password, callback) {
+    // Önce Firebase'den tüm kullanıcıları yükle ve kontrol et
+    loadUsersFromFirebase((allUsers) => {
+        const localUsers = getUsers();
+        
+        // Tüm kullanıcıları birleştir (e-posta kontrolü için)
+        const usersMap = new Map();
+        localUsers.forEach(u => {
+            if (u && u.email) usersMap.set(u.email.toLowerCase(), u);
+        });
+        if (allUsers && Array.isArray(allUsers)) {
+            allUsers.forEach(u => {
+                if (u && u.email) usersMap.set(u.email.toLowerCase(), u);
+            });
+        }
+        
+        const allUsersList = Array.from(usersMap.values());
+        
+        // E-posta kontrolü (case-insensitive)
+        const emailLower = email.toLowerCase().trim();
+        const existingUser = allUsersList.find(u => u.email && u.email.toLowerCase().trim() === emailLower);
+        
+        if (existingUser) {
+            alert('Bu e-posta adresi zaten kayıtlı! Lütfen farklı bir e-posta adresi kullanın.');
+            if (callback) callback(false);
+            return false;
+        }
+        
+        // E-posta formatı kontrolü
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            alert('Geçersiz e-posta adresi formatı! Lütfen geçerli bir e-posta adresi girin.');
+            if (callback) callback(false);
+            return false;
+        }
+        
+        const hashedPassword = hashPassword(password);
+        const newUser = {
+            id: Date.now().toString(),
+            name: name.trim(),
+            phone: phone.trim(),
+            email: email.trim().toLowerCase(),
+            password: hashedPassword,
+            createdAt: new Date().toISOString()
+        };
+        
+        // LocalStorage'a ekle
+        const users = getUsers();
+        users.push(newUser);
+        localStorage.setItem('users', JSON.stringify(users));
+        
+        // Firebase'e kaydet
+        if (useFirebase && database) {
+            saveUserToFirebase(newUser);
+            console.log('✅ Yeni kullanıcı Firebase\'e kaydedildi:', newUser.email);
+        } else {
+            console.warn('⚠️ Firebase mevcut değil, kullanıcı sadece localStorage\'a kaydedildi');
+        }
+        
+        // Kullanıcı verilerini oluştur
+        createUserData(newUser.id);
+        
+        if (callback) callback(true);
+        return true;
+    });
     
-    // E-posta kontrolü
-    if (users.find(u => u.email === email)) {
-        alert('Bu e-posta adresi zaten kayıtlı!');
-        return false;
-    }
-    
-    const hashedPassword = hashPassword(password);
-    const newUser = {
-        id: Date.now().toString(),
-        name: name,
-        phone: phone,
-        email: email,
-        password: hashedPassword,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    // Firebase'e kaydet
-    if (useFirebase && database) {
-        saveUserToFirebase(newUser);
-        console.log('✅ Yeni kullanıcı Firebase\'e kaydedildi:', newUser.email);
-    } else {
-        console.warn('⚠️ Firebase mevcut değil, kullanıcı sadece localStorage\'a kaydedildi');
-    }
-    
-    // Kullanıcı verilerini oluştur
-    createUserData(newUser.id);
-    
-    return true;
+    // Async işlem olduğu için false döndürüyoruz, callback ile sonucu döndürüyoruz
+    return false;
 }
 
 // Kullanıcı giriş
@@ -1238,12 +1272,29 @@ function setupAuthListeners() {
         const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
         
-        if (registerUser(name, phone, email, password)) {
-            if (loginUser(email, password)) {
-                showApp();
-                updateUserInfo();
-            }
+        // Loading göster
+        const registerBtn = document.querySelector('#registerFormElement button[type="submit"]');
+        const originalText = registerBtn ? registerBtn.textContent : '';
+        if (registerBtn) {
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Kayıt yapılıyor...';
         }
+        
+        registerUser(name, phone, email, password, (success) => {
+            // Loading'i kaldır
+            if (registerBtn) {
+                registerBtn.disabled = false;
+                registerBtn.textContent = originalText;
+            }
+            
+            if (success) {
+                // Kayıt başarılı, giriş yap
+                if (loginUser(email, password)) {
+                    showApp();
+                    updateUserInfo();
+                }
+            }
+        });
     });
     
     // Form geçişleri
