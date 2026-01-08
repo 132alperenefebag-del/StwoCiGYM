@@ -3681,8 +3681,8 @@ function showFriendSearchResult(friend) {
                 <button class="close-modal" onclick="closeFriendSearchResult()">×</button>
             </div>
             <div class="friend-profile-content">
-                <div class="friend-profile-photo" style="text-align: center; margin-bottom: 20px;">
-                    ${friendPhoto ? `<img src="${friendPhoto}" alt="${friend.name}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; border: 4px solid var(--primary-color);">` : '<div style="width: 120px; height: 120px; border-radius: 50%; background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto; color: white;">👤</div>'}
+                <div class="friend-profile-photo" style="text-align: center; margin-bottom: 20px; cursor: pointer;" onclick="closeFriendSearchResult(); viewFriendProfile('${friend.id}')" title="${friend.name} profilini gör">
+                    ${friendPhoto ? `<img src="${friendPhoto}" alt="${friend.name}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; border: 4px solid var(--primary-color); cursor: pointer;">` : '<div style="width: 120px; height: 120px; border-radius: 50%; background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto; color: white; cursor: pointer;">👤</div>'}
                 </div>
                 <div class="friend-profile-info" style="text-align: center; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 10px; color: var(--dark-color);">${friend.name}</h3>
@@ -4340,19 +4340,20 @@ function displayFriends(friends) {
     let html = '';
     friends.forEach(friend => {
         const userData = getUserDataById(friend.id);
+        const friendIdStr = String(friend.id || '');
         html += `
             <div class="friend-item">
-                <div class="friend-photo">
-                    ${friend.photo ? `<img src="${friend.photo}" alt="${friend.name}">` : '<div class="friend-photo-placeholder">👤</div>'}
+                <div class="friend-photo" style="cursor: pointer;" onclick="viewFriendProfile('${friendIdStr}')" title="${friend.name} profilini gör">
+                    ${friend.photo ? `<img src="${friend.photo}" alt="${friend.name}" style="cursor: pointer;">` : '<div class="friend-photo-placeholder" style="cursor: pointer;">👤</div>'}
                 </div>
-                <div class="friend-info">
+                <div class="friend-info" style="cursor: pointer;" onclick="viewFriendProfile('${friendIdStr}')" title="${friend.name} profilini gör">
                     <strong>${friend.name}</strong>
                     <div style="font-size: 0.85rem; color: #666;">${friend.email}</div>
                     ${userData ? `<div style="font-size: 0.8rem; color: #999; margin-top: 5px;">Puan: ${userData.points || 0} | Level: ${userData.userLevel || 1}</div>` : ''}
                 </div>
                 <div class="friend-actions">
-                    <button class="btn-secondary" onclick="viewFriendProfile('${friend.id}')">Profil</button>
-                    <button class="btn-secondary" onclick="removeFriend('${friend.id}')">Kaldır</button>
+                    <button class="btn-secondary" onclick="event.stopPropagation(); viewFriendProfile('${friendIdStr}')">Profil</button>
+                    <button class="btn-secondary" onclick="event.stopPropagation(); removeFriend('${friendIdStr}')">Kaldır</button>
                 </div>
             </div>
         `;
@@ -4368,62 +4369,95 @@ function getUserDataById(userId) {
 }
 
 function viewFriendProfile(friendId) {
-    const users = getUsers();
-    const friend = users.find(u => u.id === friendId);
-    if (!friend) return;
+    console.log('👤 Profil görüntüleniyor:', friendId);
     
-    const userData = getUserDataById(friendId);
-    const friendPhoto = getProfilePhotoByUserId(friendId);
-    const friendNotes = getProfileNotes().filter(n => n.userId === friendId).slice(0, 5);
-    
-    const modal = document.createElement('div');
-    modal.className = 'user-details-modal active';
-    modal.id = 'friendProfileModal';
-    
-    modal.innerHTML = `
-        <div class="user-details-content" style="max-width: 700px;">
-            <div class="user-details-header">
-                <h3>${friend.name} - Profil</h3>
-                <button class="close-modal" onclick="closeFriendProfile()">×</button>
-            </div>
-            <div class="friend-profile-content">
-                <div class="friend-profile-photo">
-                    ${friendPhoto ? `<img src="${friendPhoto}" alt="${friend.name}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block;">` : '<div style="width: 150px; height: 150px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto;">👤</div>'}
+    // Önce Firebase'den tüm kullanıcıları yükle
+    loadUsersFromFirebase((allUsers) => {
+        const localUsers = getUsers();
+        
+        // Tüm kullanıcıları birleştir
+        const usersMap = new Map();
+        localUsers.forEach(u => {
+            if (u && u.id) usersMap.set(String(u.id), u);
+        });
+        if (allUsers && Array.isArray(allUsers)) {
+            allUsers.forEach(u => {
+                if (u && u.id) usersMap.set(String(u.id), u);
+            });
+        }
+        
+        const friendIdStr = String(friendId || '');
+        const friend = Array.from(usersMap.values()).find(u => String(u.id || '') === friendIdStr);
+        
+        if (!friend) {
+            console.error('❌ Kullanıcı bulunamadı:', friendId);
+            alert('Kullanıcı bulunamadı!');
+            return;
+        }
+        
+        console.log('✅ Kullanıcı bulundu:', friend.name);
+        
+        const userData = getUserDataById(friendId);
+        const friendPhoto = getProfilePhotoByUserId(friendId);
+        const friendNotes = getProfileNotes().filter(n => String(n.userId || '') === friendIdStr).slice(0, 5);
+        
+        // Eğer modal zaten varsa kaldır
+        const existingModal = document.getElementById('friendProfileModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'user-details-modal active';
+        modal.id = 'friendProfileModal';
+        
+        modal.innerHTML = `
+            <div class="user-details-content" style="max-width: 700px;">
+                <div class="user-details-header">
+                    <h3>${friend.name || 'İsimsiz'} - Profil</h3>
+                    <button class="close-modal" onclick="closeFriendProfile()">×</button>
                 </div>
-                <div class="friend-profile-info">
-                    <p><strong>E-posta:</strong> ${friend.email}</p>
-                    <p><strong>Telefon:</strong> ${friend.phone || '-'}</p>
-                    ${userData ? `
-                        <p><strong>Toplam Puan:</strong> ${userData.points || 0}</p>
-                        <p><strong>Level:</strong> ${userData.userLevel || 1}</p>
-                        <p><strong>Tamamlanan Antrenman:</strong> ${userData.completedDays || 0}</p>
-                        <p><strong>Mevcut Seri:</strong> ${userData.currentStreak || 0} gün</p>
+                <div class="friend-profile-content">
+                    <div class="friend-profile-photo" style="text-align: center; margin-bottom: 20px;">
+                        ${friendPhoto ? `<img src="${friendPhoto}" alt="${friend.name}" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; cursor: pointer;" onclick="viewFriendProfile('${friendId}')">` : '<div style="width: 150px; height: 150px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto;">👤</div>'}
+                    </div>
+                    <div class="friend-profile-info">
+                        <p><strong>E-posta:</strong> ${friend.email || '-'}</p>
+                        <p><strong>Telefon:</strong> ${friend.phone || '-'}</p>
+                        ${userData ? `
+                            <p><strong>Toplam Puan:</strong> ${userData.points || 0}</p>
+                            <p><strong>Level:</strong> ${userData.userLevel || 1}</p>
+                            <p><strong>Tamamlanan Antrenman:</strong> ${userData.completedDays || 0}</p>
+                            <p><strong>Mevcut Seri:</strong> ${userData.currentStreak || 0} gün</p>
+                        ` : '<p style="color: #999;">Henüz antrenman verisi yok.</p>'}
+                    </div>
+                    ${friendNotes.length > 0 ? `
+                        <div class="friend-notes-section" style="margin-top: 20px;">
+                            <h4>Son Notlar</h4>
+                            ${friendNotes.map(note => `
+                                <div class="profile-note-item" style="margin-bottom: 15px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                    ${note.image ? `<img src="${note.image}" style="width: 100%; max-width: 400px; border-radius: 8px; margin-bottom: 10px;" alt="Not resmi">` : ''}
+                                    <div class="note-content">${note.note || ''}</div>
+                                    <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">
+                                        ${new Date(note.timestamp).toLocaleDateString('tr-TR')} ${new Date(note.timestamp).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
+                                        ${Array.isArray(note.likes) && note.likes.length > 0 ? ` • ❤️ ${note.likes.length}` : ''}
+                                        ${Array.isArray(note.comments) && note.comments.length > 0 ? ` • 💬 ${note.comments.length}` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
                     ` : ''}
                 </div>
-                ${friendNotes.length > 0 ? `
-                    <div class="friend-notes-section">
-                        <h4>Son Notlar</h4>
-                        ${friendNotes.map(note => `
-                            <div class="profile-note-item" style="margin-bottom: 15px;">
-                                <div class="note-content">${note.note}</div>
-                                <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">
-                                    ${new Date(note.timestamp).toLocaleDateString('tr-TR')}
-                                    ${Array.isArray(note.likes) && note.likes.length > 0 ? ` • ❤️ ${note.likes.length}` : ''}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : ''}
             </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeFriendProfile();
-        }
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeFriendProfile();
+            }
+        });
     });
 }
 
