@@ -1,2 +1,2 @@
 # StwoCiGYM
-PATLADIADPOIWADIWAJDUIJWAD
+ne bakıon krdşm
