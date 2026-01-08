@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="tr">
+    
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>UpperBody Coach - Evde Aletsiz Üst Vücut Antrenman Koçu</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDK (Compat Version for Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="welcome-screen" style="display: none !important;">
+        <div class="welcome-content">
+            <div class="welcome-text-container">
+                <h1 class="welcome-title">
+                    <span class="text-reveal" data-text="UpperBody">UpperBody</span>
+                    <span class="text-reveal delay-1" data-text="Coach">Coach</span>
+                </h1>
+                <p class="welcome-subtitle text-flow">
+                    <span class="word-reveal">Güçlü</span>
+                    <span class="word-reveal delay-1">Başla</span>
+                    <span class="word-reveal delay-2">Hedefine</span>
+                    <span class="word-reveal delay-3">Ulaş</span>
+                </p>
+                <div class="welcome-message text-reveal delay-4">
+                    <p>"Her antrenman seni hedefine bir adım daha yaklaştırır"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Giriş/Kayıt Ekranı -->
+    <div id="authScreen" class="auth-screen" style="display: none !important;">
+        <div class="auth-split-container">
+            <!-- Sol Taraf - Form -->
+            <div class="auth-form-section">
+                <div class="auth-container">
+                    <div class="auth-header">
+                        <h1 class="auth-title shake-animation">UpperBody Coach</h1>
+                        <p class="auth-subtitle float-animation">Antrenman Koçunuza Hoş Geldiniz</p>
+                    </div>
+                    
+                    <!-- Giriş Formu -->
+                    <div id="loginForm" class="auth-form active">
+                        <h2 class="form-title slide-in-left">Giriş Yap</h2>
+                        <form id="loginFormElement">
+                            <div class="form-group">
+                                <label for="loginEmail">E-posta</label>
+                                <input type="email" id="loginEmail" placeholder="ornek@email.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword">Şifre</label>
+                                <input type="password" id="loginPassword" placeholder="••••••••" required>
+                            </div>
+                            <button type="submit" class="btn-primary pulse-animation">Giriş Yap</button>
+                            <p class="auth-switch">
+                                Hesabınız yok mu? 
+                                <a href="#" id="showRegister" class="auth-link">Kayıt Ol</a>
+                            </p>
+                        </form>
+                    </div>
+                    
+                    <!-- Kayıt Formu -->
+                    <div id="registerForm" class="auth-form">
+                        <h2 class="form-title slide-in-left">Kayıt Ol</h2>
+                        <form id="registerFormElement">
+                            <div class="form-group">
+                                <label for="registerName">Ad Soyad</label>
+                                <input type="text" id="registerName" placeholder="Adınız Soyadınız" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="registerPhone">Telefon Numarası</label>
+                                <input type="tel" id="registerPhone" placeholder="05XX XXX XX XX" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="registerEmail">E-posta</label>
+                                <input type="email" id="registerEmail" placeholder="ornek@email.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="registerPassword">Şifre</label>
+                                <input type="password" id="registerPassword" placeholder="En az 6 karakter" required minlength="6">
+                            </div>
+                            <button type="submit" class="btn-primary pulse-animation">Kayıt Ol</button>
+                            <p class="auth-switch">
+                                Zaten hesabınız var mı? 
+                                <a href="#" id="showLogin" class="auth-link">Giriş Yap</a>
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sağ Taraf - Sportif Görsel -->
+            <div class="auth-visual-section">
+                <div class="auth-visual-content">
+                    <div class="visual-overlay"></div>
+                    <div class="visual-content">
+                        <div class="visual-title bounce-animation">
+                            <h2>Güçlü Başla</h2>
+                            <h3>Hedefine Ulaş</h3>
+                        </div>
+                        <div class="visual-stats">
+                            <div class="stat-card float-delay-1">
+                                <div class="stat-number">1000+</div>
+                                <div class="stat-label">Aktif Kullanıcı</div>
+                            </div>
+                            <div class="stat-card float-delay-2">
+                                <div class="stat-number">50K+</div>
+                                <div class="stat-label">Tamamlanan Antrenman</div>
+                            </div>
+                            <div class="stat-card float-delay-3">
+                                <div class="stat-number">98%</div>
+                                <div class="stat-label">Memnuniyet Oranı</div>
+                            </div>
+                        </div>
+                        <div class="visual-quotes">
+                            <p class="quote-item slide-in-right">"Disiplin, motivasyon ve süreklilik başarının anahtarıdır"</p>
+                            <p class="quote-item slide-in-right-delay">"Her antrenman seni hedefine bir adım daha yaklaştırır"</p>
+                        </div>
+                    </div>
+                    <div class="sport-silhouette">
+                        <svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg" class="silhouette-svg">
+                            <!-- Kaslı vücut silueti -->
+                            <path d="M200 50 Q180 100 190 150 L200 200 Q210 250 200 300 L190 350 Q180 400 200 450 L210 500 Q220 550 200 580" 
+                                  fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="3" class="body-outline"/>
+                            <circle cx="200" cy="120" r="25" fill="rgba(255,255,255,0.15)" class="head"/>
+                            <ellipse cx="180" cy="200" rx="30" ry="40" fill="rgba(255,255,255,0.1)" class="chest"/>
+                            <ellipse cx="220" cy="200" rx="30" ry="40" fill="rgba(255,255,255,0.1)" class="chest"/>
+                            <path d="M150 250 Q140 300 150 350" stroke="rgba(255,255,255,0.2)" stroke-width="4" fill="none" class="arm"/>
+                            <path d="M250 250 Q260 300 250 350" stroke="rgba(255,255,255,0.2)" stroke-width="4" fill="none" class="arm"/>
+                            <ellipse cx="200" cy="400" rx="35" ry="50" fill="rgba(255,255,255,0.1)" class="abs"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana Uygulama -->
+    <div class="app-container" id="appContainer" style="display: none;">
+        <!-- Mobil Menü Butonu -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        
+        <!-- Sidebar Menü -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>UpperBody Coach</h1>
+                <p class="sidebar-subtitle">Antrenman Koçu</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-tab="userInfo">
+                    <span class="nav-icon">⚙</span>
+                    <span class="nav-text">Kişisel Bilgiler</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="discover">
+                    <span class="nav-icon">✨</span>
+                    <span class="nav-text">Keşfet</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="stats">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">İstatistikler</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="workout">
+                    <span class="nav-icon">💪</span>
+                    <span class="nav-text">Antrenman Planı</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="exercises">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Hareket Açıklamaları</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="history">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-text">Antrenman Geçmişi</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="progress">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">İlerleme Takibi</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="leaderboard">
+                    <span class="nav-icon">🏆</span>
+                    <span class="nav-text">Top List</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="profile">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-text">Profilim</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="friends">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Arkadaşlar</span>
+                </a>
+            </nav>
+            <div class="admin-section">
+                <a href="#" class="nav-item admin-link" id="adminLink">
+                    <span class="nav-icon">🔒</span>
+                    <span class="nav-text">Admin Girişi</span>
+                </a>
+            </div>
+            <div class="sidebar-footer">
+                <!-- Theme & Color Settings -->
+                <div class="theme-settings">
+                    <div class="theme-toggle-container">
+                        <label class="theme-toggle-label">
+                            <span class="theme-icon">🌙</span>
+                            <span class="theme-text">Dark Mode</span>
+                            <input type="checkbox" id="themeToggle" class="theme-toggle">
+                            <span class="theme-slider"></span>
+                        </label>
+                    </div>
+                    <button class="btn-settings" id="colorSettingsBtn" title="Renk Ayarları">
+                        <span>🎨</span> Renkler
+                    </button>
+                </div>
+                
+                <div class="user-info">
+                    <span class="user-name" id="sidebarUserName">-</span>
+                    <span class="user-email" id="sidebarUserEmail">-</span>
+                </div>
+                <button class="btn-logout" id="logoutBtn">Çıkış Yap</button>
+            </div>
+        </aside>
+
+        <!-- Renk Ayarları Modal -->
+        <div id="colorSettingsModal" class="settings-modal">
+            <div class="settings-modal-content">
+                <div class="settings-header">
+                    <h3>Renk Teması Özelleştir</h3>
+                    <button class="close-settings" id="closeColorSettings">×</button>
+                </div>
+                <div class="color-presets">
+                    <h4>Hazır Temalar</h4>
+                    <div class="preset-grid">
+                        <div class="preset-item" data-preset="default">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);"></div>
+                            <span>Varsayılan</span>
+                        </div>
+                        <div class="preset-item" data-preset="ocean">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4);"></div>
+                            <span>Okyanus</span>
+                        </div>
+                        <div class="preset-item" data-preset="sunset">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #f97316, #ec4899);"></div>
+                            <span>Gün Batımı</span>
+                        </div>
+                        <div class="preset-item" data-preset="forest">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #10b981, #059669);"></div>
+                            <span>Orman</span>
+                        </div>
+                        <div class="preset-item" data-preset="royal">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);"></div>
+                            <span>Kraliyet</span>
+                        </div>
+                        <div class="preset-item" data-preset="fire">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #ef4444, #f97316);"></div>
+                            <span>Ateş</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="custom-colors">
+                    <h4>Özel Renk</h4>
+                    <div class="color-picker-group">
+                        <label>Ana Renk:</label>
+                        <input type="color" id="primaryColorPicker" value="#6366f1">
+                    </div>
+                    <div class="color-picker-group">
+                        <label>İkincil Renk:</label>
+                        <input type="color" id="secondaryColorPicker" value="#8b5cf6">
+                    </div>
+                    <button class="btn-primary" id="applyCustomColors">Uygula</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ana İçerik Alanı -->
+        <main class="main-content">
+            <!-- Kişisel Bilgiler Sekmesi -->
+            <section id="userInfo" class="content-section active">
+                <div class="card">
+                    <h2>Kişisel Bilgileriniz</h2>
+                    <form id="userInfoForm">
+                        <div class="form-group">
+                            <label for="gender">Cinsiyet:</label>
+                            <select id="gender" name="gender" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="male">Erkek</option>
+                                <option value="female">Kadın</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="age">Yaş:</label>
+                            <input type="number" id="age" name="age" min="10" max="100" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="height">Boy (cm):</label>
+                            <input type="number" id="height" name="height" min="100" max="250" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="weight">Kilo (kg):</label>
+                            <input type="number" id="weight" name="weight" min="30" max="200" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="goal">Hedef:</label>
+                            <select id="goal" name="goal" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="muscle">Kas Geliştirme</option>
+                                <option value="strength">Güç Kazanma</option>
+                                <option value="fatburn">Yağ Yakma</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="activityLevel">Aktivite Seviyesi:</label>
+                            <select id="activityLevel" name="activityLevel" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="sedentary">Hareketsiz (Az hareket)</option>
+                                <option value="light">Hafif Aktif (Haftada 1-3 gün)</option>
+                                <option value="moderate" selected>Orta Aktif (Haftada 3-5 gün)</option>
+                                <option value="active">Aktif (Haftada 6-7 gün)</option>
+                                <option value="veryActive">Çok Aktif (Günde 2 kez antrenman)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="planType">Plan Tipi:</label>
+                            <select id="planType" name="planType" required>
+                                <option value="daily">Günlük Plan</option>
+                                <option value="weekly">Haftalık Plan</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ekipmanlar (Mevcut olanları işaretleyin):</label>
+                            <div class="equipment-selection" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: var(--light-color); border-radius: 8px; transition: all 0.3s ease;">
+                                    <input type="checkbox" id="equipmentNone" name="equipment" value="none" checked style="width: 20px; height: 20px; cursor: pointer;">
+                                    <span style="font-weight: 500;">💪 Aletsiz (Vücut Ağırlığı)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: var(--light-color); border-radius: 8px; transition: all 0.3s ease;">
+                                    <input type="checkbox" id="equipmentDumbbell" name="equipment" value="dumbbell" style="width: 20px; height: 20px; cursor: pointer;">
+                                    <span style="font-weight: 500;">🏋️ Dambıl (Dumbbell)</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; background: var(--light-color); border-radius: 8px; transition: all 0.3s ease;">
+                                    <input type="checkbox" id="equipmentBarbell" name="equipment" value="barbell" style="width: 20px; height: 20px; cursor: pointer;">
+                                    <span style="font-weight: 500;">⚖️ Halter (Barbell)</span>
+                                </label>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 10px;">
+                                Mevcut ekipmanlarınıza göre antrenman programınız özelleştirilecektir.
+                            </p>
+                        </div>
+                        <button type="submit" class="btn-primary">Antrenman Planını Oluştur</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- İstatistikler Sekmesi -->
+            <section id="stats" class="content-section">
+                <div class="card">
+                    <h2>İstatistikleriniz</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">BMI</div>
+                            <div class="stat-value" id="bmiValue">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Seviye</div>
+                            <div class="stat-value" id="levelValue">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Puan</div>
+                            <div class="stat-value" id="pointsValue">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Level</div>
+                            <div class="stat-value" id="userLevel">1</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Kalori Bilgileri -->
+                    <div id="calorieInfo" class="calorie-info-section" style="display: none;">
+                        <h3>🔥 Beslenme ve Kalori Bilgileri</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">BMR</div>
+                                <div class="stat-value" id="bmrValue">-</div>
+                                <div class="stat-sublabel">Bazal Metabolizma</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">TDEE</div>
+                                <div class="stat-value" id="tdeeValue">-</div>
+                                <div class="stat-sublabel">Günlük Enerji İhtiyacı</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Hedef Kalori</div>
+                                <div class="stat-value" id="targetCaloriesValue">-</div>
+                                <div class="stat-sublabel">Günlük Hedef</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Protein</div>
+                                <div class="stat-value" id="proteinValue">-</div>
+                                <div class="stat-sublabel">Günlük (g)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Karbonhidrat</div>
+                                <div class="stat-value" id="carbsValue">-</div>
+                                <div class="stat-sublabel">Günlük (g)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Yağ</div>
+                                <div class="stat-value" id="fatValue">-</div>
+                                <div class="stat-sublabel">Günlük (g)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="badges-container">
+                        <h3>Rozetleriniz</h3>
+                        <div id="badgesList" class="badges-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Antrenman Planı Sekmesi -->
+            <section id="workout" class="content-section">
+                <div class="card">
+                    <h2 id="workoutTitle">Antrenman Planınız</h2>
+                    <div id="workoutPlan" class="workout-plan"></div>
+                    <div class="workout-actions">
+                        <button id="refreshWorkoutBtn" class="btn-refresh">
+                            <span class="btn-icon">🔄</span>
+                            <span>Antrenmanı Yenile</span>
+                        </button>
+                        <button id="completeWorkoutBtn" class="btn-success">Antrenmanı Tamamla</button>
+                        <button id="resetBtn" class="btn-secondary">Yeni Plan Oluştur</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hareket Açıklamaları Sekmesi -->
+            <section id="exercises" class="content-section">
+                <div class="card">
+                    <h2>Hareket Açıklamaları</h2>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <input type="text" id="exerciseSearchInput" placeholder="🔍 Hareket ara (örn: şınav, dambıl, halter)..." style="width: 100%; padding: 12px; border: 2px solid var(--light-color); border-radius: 8px; font-size: 1rem;">
+                    </div>
+                    <div id="exercisesList" class="exercises-list"></div>
+                </div>
+            </section>
+
+            <!-- Antrenman Geçmişi Sekmesi -->
+            <section id="history" class="content-section">
+                <div class="card">
+                    <h2>Antrenman Geçmişi</h2>
+                    <div id="workoutHistory" class="history-list"></div>
+                </div>
+            </section>
+
+            <!-- İlerleme Takibi Sekmesi -->
+            <section id="progress" class="content-section">
+                <div class="card">
+                    <h2>İlerleme Takibi</h2>
+                    <div class="progress-stats">
+                        <div class="progress-item">
+                            <h3>Toplam Antrenman</h3>
+                            <div class="progress-value" id="totalWorkouts">0</div>
+                        </div>
+                        <div class="progress-item">
+                            <h3>Toplam Puan</h3>
+                            <div class="progress-value" id="totalPoints">0</div>
+                        </div>
+                        <div class="progress-item">
+                            <h3>Ortalama Performans</h3>
+                            <div class="progress-value" id="avgPerformance">-</div>
+                        </div>
+                        <div class="progress-item">
+                            <h3>En Uzun Seri</h3>
+                            <div class="progress-value" id="longestStreak">0 gün</div>
+                        </div>
+                    </div>
+                    <div class="progress-chart">
+                        <h3>Haftalık İlerleme</h3>
+                        <div id="weeklyProgress" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Top List Sekmesi -->
+            <section id="leaderboard" class="content-section">
+                <div class="card">
+                    <h2>🏆 Top List</h2>
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" data-leaderboard="all">Tüm Zamanlar</button>
+                        <button class="tab-btn" data-leaderboard="daily">Günlük</button>
+                        <button class="tab-btn" data-leaderboard="weekly">Haftalık</button>
+                    </div>
+                    <div id="leaderboardContent" class="leaderboard-content"></div>
+                </div>
+            </section>
+
+            <!-- Profil Sekmesi -->
+            <section id="profile" class="content-section">
+                <div class="card">
+                    <h2>👤 Profilim</h2>
+                    
+                    <!-- Profil Fotoğrafı -->
+                    <div class="profile-photo-section">
+                        <div class="profile-photo-container">
+                            <img id="profilePhoto" src="" alt="Profil Fotoğrafı" class="profile-photo">
+                            <div class="profile-photo-overlay">
+                                <label for="profilePhotoInput" class="profile-photo-upload-btn">📷 Fotoğraf Değiştir</label>
+                                <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profil Bilgileri -->
+                    <div class="profile-info-section">
+                        <div class="profile-info-item">
+                            <strong>Ad Soyad:</strong> <span id="profileName">-</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <strong>E-posta:</strong> <span id="profileEmail">-</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <strong>Telefon:</strong> <span id="profilePhone">-</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <strong>Toplam Puan:</strong> <span id="profilePoints">0</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <strong>Level:</strong> <span id="profileLevel">1</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <strong>Tamamlanan Antrenman:</strong> <span id="profileWorkouts">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Notlar/Status Paylaşma -->
+                    <div class="profile-notes-section">
+                        <h3>📷 Fotoğraf Paylaş</h3>
+                        <p style="color: var(--gray-500); margin-bottom: 15px; font-size: 0.9rem;">
+                            Profilinizde fotoğraf paylaşabilirsiniz. Fotoğraf zorunludur, isterseniz fotoğrafınıza açıklama ekleyebilirsiniz.
+                        </p>
+                        <div class="form-group">
+                            <label for="profileNoteImageInput" style="display: block; margin-bottom: 10px; font-weight: 600;">
+                                Fotoğraf Seç (Zorunlu):
+                            </label>
+                            <input type="file" id="profileNoteImageInput" accept="image/*" required style="margin-bottom: 15px;">
+                            <textarea id="profileNoteInput" rows="3" placeholder="Fotoğrafınıza açıklama ekleyin (opsiyonel)..."></textarea>
+                        </div>
+                        <button class="btn-primary" id="shareNoteBtn">Fotoğraf Paylaş</button>
+                        
+                        <div class="profile-notes-list" id="profileNotesList">
+                            <!-- Notlar buraya eklenecek -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Keşfet Sekmesi -->
+            <section id="discover" class="content-section">
+                <div class="card">
+                    <h2>✨ Keşfet</h2>
+                    <p style="color: var(--gray-500); margin-bottom: 15px;">
+                        Buradan not paylaşabilir ve diğer kullanıcıların paylaşımlarını görebilirsiniz.
+                    </p>
+                    
+                    <!-- Keşfet Not Paylaşma -->
+                    <div class="discover-share-section" style="margin-bottom: 30px; padding-bottom: 30px; border-bottom: 2px solid var(--light-color);">
+                        <h3 style="margin-bottom: 15px; color: var(--dark-color);">📝 Not Paylaş</h3>
+                        <div class="form-group">
+                            <textarea id="discoverNoteInput" rows="4" placeholder="Ne düşünüyorsunuz? Durumunuzu paylaşın..."></textarea>
+                        </div>
+                        <div class="profile-note-options">
+                            <label class="note-image-label">
+                                Fotoğraf ekle (opsiyonel):
+                                <input type="file" id="discoverNoteImageInput" accept="image/*">
+                            </label>
+                        </div>
+                        <button class="btn-primary" id="shareDiscoverNoteBtn">Keşfet'te Paylaş</button>
+                    </div>
+                    
+                    <div id="discoverNotesList" class="discover-notes-list">
+                        <!-- Keşfet notları buraya eklenecek -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Arkadaşlar Sekmesi -->
+            <section id="friends" class="content-section">
+                <div class="card">
+                    <h2>👥 Arkadaşlar</h2>
+                    
+                    <!-- Arkadaş Arama -->
+                    <div class="friends-search-section">
+                        <div class="form-group">
+                            <input type="text" id="friendSearchInput" placeholder="E-posta ile arkadaş ara...">
+                            <button class="btn-primary" id="searchFriendBtn">Ara</button>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 10px; line-height: 1.5;">
+                            💡 <strong>İpucu:</strong> Farklı cihazlardaki kullanıcıları görmek için Firebase kurallarının güncel olduğundan emin olun.
+                        </p>
+                    </div>
+
+                    <!-- Arkadaş Listesi -->
+                    <div class="friends-list-section">
+                        <h3>Arkadaşlarım</h3>
+                        <div id="friendsList" class="friends-list">
+                            <!-- Arkadaşlar buraya eklenecek -->
+                        </div>
+                    </div>
+
+                    <!-- Arkadaş İstekleri -->
+                    <div class="friend-requests-section">
+                        <h3>Arkadaş İstekleri</h3>
+                        <div id="friendRequestsList" class="friend-requests-list">
+                            <!-- İstekler buraya eklenecek -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Panel Sekmesi -->
+            <section id="admin" class="content-section">
+                <div class="card">
+                    <h2>🔐 Admin Paneli</h2>
+                    
+                    <!-- Admin Giriş -->
+                    <div id="adminLogin" class="admin-login">
+                        <p>Admin paneline erişmek için şifre girin:</p>
+                        <div class="form-group">
+                            <label for="adminPassword">Admin Şifresi:</label>
+                            <input type="password" id="adminPassword" placeholder="Admin şifresini girin">
+                        </div>
+                        <button class="btn-primary" id="adminLoginBtn">Giriş Yap</button>
+                    </div>
+
+                    <!-- Admin İçerik -->
+                    <div id="adminContent" class="admin-content" style="display: none;">
+                        <div class="admin-actions">
+                            <button class="btn-primary" id="exportDataBtn">📥 Tüm Verileri İndir (JSON)</button>
+                            <button class="btn-secondary" id="refreshAdminBtn">🔄 Yenile</button>
+                        </div>
+                        
+                        <div class="admin-stats">
+                            <h3>Genel İstatistikler</h3>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-label">Toplam Kullanıcı</div>
+                                    <div class="stat-value" id="adminTotalUsers">0</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Aktif Kullanıcı</div>
+                                    <div class="stat-value" id="adminActiveUsers">0</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Toplam Antrenman</div>
+                                    <div class="stat-value" id="adminTotalWorkouts">0</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-label">Toplam Puan</div>
+                                    <div class="stat-value" id="adminTotalPoints">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="users-list">
+                            <h3>Kullanıcı Listesi</h3>
+                            <div id="usersTable" class="users-table"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bildirim Konteyneri -->
+    <div id="notificationContainer" class="notification-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
