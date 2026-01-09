@@ -338,23 +338,72 @@ function registerUser(name, phone, email, password, callback) {
 
 // Kullanıcı giriş
 function loginUser(email, password) {
-    const users = getUsers();
+    // Email'i normalize et (küçük harfe çevir ve trim yap) - Kayıt sırasında da aynı şekilde kaydediliyor
+    const emailNormalized = email.toLowerCase().trim();
     const hashedPassword = hashPassword(password);
     
-    const user = users.find(u => u.email === email && u.password === hashedPassword);
+    // Önce localStorage'dan kontrol et (case-insensitive)
+    const localUsers = getUsers();
+    let user = localUsers.find(u => {
+        if (!u || !u.email) return false;
+        const userEmail = u.email.toLowerCase().trim();
+        return userEmail === emailNormalized && u.password === hashedPassword;
+    });
     
-    if (!user) {
-        alert('E-posta veya şifre hatalı!');
+    // LocalStorage'da bulundu
+    if (user) {
+        currentUser = user;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        loadUserData();
+        return true;
+    }
+    
+    // Eğer localStorage'da bulunamadıysa Firebase'den kontrol et
+    if (useFirebase && database) {
+        // Firebase async olduğu için önce false döndür, sonra callback ile işle
+        loadUsersFromFirebase((allUsers) => {
+            if (allUsers && Array.isArray(allUsers)) {
+                const foundUser = allUsers.find(u => {
+                    if (!u || !u.email) return false;
+                    const userEmail = u.email.toLowerCase().trim();
+                    return userEmail === emailNormalized && u.password === hashedPassword;
+                });
+                
+                if (foundUser) {
+                    // Firebase'de bulunan kullanıcıyı localStorage'a da ekle (senkronizasyon için)
+                    const localUsers = getUsers();
+                    const alreadyExists = localUsers.find(u => u.id === foundUser.id);
+                    if (!alreadyExists) {
+                        localUsers.push(foundUser);
+                        localStorage.setItem('users', JSON.stringify(localUsers));
+                    }
+                    
+                    // Giriş yap
+                    currentUser = foundUser;
+                    localStorage.setItem('currentUser', JSON.stringify(foundUser));
+                    loadUserData();
+                    
+                    // Sayfayı güncelle (eğer form submit edildiyse)
+                    if (document.getElementById('loginFormElement')) {
+                        showApp();
+                        updateUserInfo();
+                        displayWorkoutHistory();
+                        displayProgress();
+                    }
+                } else {
+                    alert('E-posta veya şifre hatalı!');
+                }
+            } else {
+                alert('E-posta veya şifre hatalı!');
+            }
+        });
+        // Async işlem olduğu için false döndür, callback'te işlem yapılacak
         return false;
     }
     
-    currentUser = user;
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    
-    // Kullanıcı verilerini yükle
-    loadUserData();
-    
-    return true;
+    // Hem localStorage hem Firebase'de bulunamadı
+    alert('E-posta veya şifre hatalı!');
+    return false;
 }
 
 // Kullanıcıları al
@@ -1256,12 +1305,17 @@ function setupAuthListeners() {
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         
-        if (loginUser(email, password)) {
+        const loginResult = loginUser(email, password);
+        
+        // Eğer login başarılı olduysa veya async işlem başladıysa
+        if (loginResult) {
             showApp();
             updateUserInfo();
             displayWorkoutHistory();
             displayProgress();
         }
+        // Eğer false döndüyse (Firebase async kontrolü başladı), 
+        // işlem loginUser içindeki callback'te tamamlanacak
     });
     
     // Kayıt formu
@@ -1288,11 +1342,35 @@ function setupAuthListeners() {
             }
             
             if (success) {
-                // Kayıt başarılı, giriş yap
-                if (loginUser(email, password)) {
-                    showApp();
-                    updateUserInfo();
-                }
+                // Kayıt başarılı, otomatik giriş yap
+                // Kısa bir gecikme ile giriş yap (Firebase'e kayıt işleminin tamamlanması için)
+                setTimeout(() => {
+                    if (loginUser(email, password)) {
+                        showApp();
+                        updateUserInfo();
+                        displayWorkoutHistory();
+                        displayProgress();
+                    } else {
+                        // Eğer login başarısız olursa tekrar dene (localStorage'dan direkt)
+                        const emailNormalized = email.toLowerCase().trim();
+                        const hashedPassword = hashPassword(password);
+                        const users = getUsers();
+                        const user = users.find(u => {
+                            const userEmail = u.email ? u.email.toLowerCase().trim() : '';
+                            return userEmail === emailNormalized && u.password === hashedPassword;
+                        });
+                        
+                        if (user) {
+                            currentUser = user;
+                            localStorage.setItem('currentUser', JSON.stringify(user));
+                            loadUserData();
+                            showApp();
+                            updateUserInfo();
+                            displayWorkoutHistory();
+                            displayProgress();
+                        }
+                    }
+                }, 500);
             }
         });
     });
