@@ -2989,51 +2989,65 @@ function shareProfileNote() {
     }
     
     const saveNote = (imageData) => {
-        const notes = getProfileNotes();
-        const newNote = {
-            id: Date.now().toString(),
-            userId: currentUser.id,
-            userName: currentUser.name,
-            userPhoto: getProfilePhoto() || '',
-            note: noteText, // Opsiyonel açıklama
-            timestamp: new Date().toISOString(),
-            likes: [],
-            comments: [],
-            isPublic: false, // Profilde paylaşılanlar keşfet'e gitmez
-            image: imageData,
-            type: 'profile' // Profil notu
-        };
-        
-        notes.unshift(newNote);
-        // Son 50 notu tut
-        if (notes.length > 50) {
-            notes.splice(50);
-        }
-        
-        localStorage.setItem('profileNotes', JSON.stringify(notes));
-        
-        // Firebase'e de kaydet (farklı cihazlardan görünsün)
-        saveProfileNotesToFirebase(notes);
-        
-        if (noteInput) noteInput.value = '';
-        if (imageInput) {
-            imageInput.value = '';
-            // Dosya adını temizle
-            const fileNameSpan = document.getElementById('profileNoteImageFileName');
-            if (fileNameSpan) {
-                fileNameSpan.style.display = 'none';
-                fileNameSpan.textContent = '';
+        try {
+            console.log('💾 Not kaydediliyor...');
+            const notes = getProfileNotes();
+            const newNote = {
+                id: Date.now().toString(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userPhoto: getProfilePhoto() || '',
+                note: noteText, // Opsiyonel açıklama
+                timestamp: new Date().toISOString(),
+                likes: [],
+                comments: [],
+                isPublic: false, // Profilde paylaşılanlar keşfet'e gitmez
+                image: imageData,
+                type: 'profile' // Profil notu
+            };
+            
+            notes.unshift(newNote);
+            // Son 50 notu tut
+            if (notes.length > 50) {
+                notes.splice(50);
+            }
+            
+            localStorage.setItem('profileNotes', JSON.stringify(notes));
+            console.log('✅ localStorage\'a kaydedildi');
+            
+            // Firebase'e de kaydet (async - beklemeden devam et)
+            saveProfileNotesToFirebase(notes);
+            
+            // UI'ı temizle
+            if (noteInput) noteInput.value = '';
+            if (imageInput) {
+                imageInput.value = '';
+                // Dosya adını temizle
+                const fileNameSpan = document.getElementById('profileNoteImageFileName');
+                if (fileNameSpan) {
+                    fileNameSpan.style.display = 'none';
+                    fileNameSpan.textContent = '';
+                }
+            }
+            
+            // Button'u geri getir (Firebase beklenmeden)
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
+            }
+            
+            // Notları yükle
+            loadProfileNotes();
+            console.log('✅ İşlem tamamlandı');
+            alert('✅ Fotoğrafınız paylaşıldı!');
+        } catch (error) {
+            console.error('❌ saveNote içinde hata:', error);
+            alert('Kayıt sırasında bir hata oluştu: ' + error.message);
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
             }
         }
-        
-        // Button'u geri getir
-        if (shareBtn) {
-            shareBtn.disabled = false;
-            shareBtn.textContent = originalText;
-        }
-        
-        loadProfileNotes();
-        alert('✅ Fotoğrafınız paylaşıldı!');
     };
     
     const reader = new FileReader();
@@ -3046,9 +3060,35 @@ function shareProfileNote() {
         }
     };
     reader.onload = (e) => {
-        saveNote(e.target.result);
+        try {
+            console.log('✅ Dosya okundu, kaydediliyor...');
+            saveNote(e.target.result);
+        } catch (error) {
+            console.error('❌ saveNote hatası:', error);
+            alert('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
+            }
+        }
     };
-    reader.readAsDataURL(file);
+    reader.onloadstart = () => {
+        console.log('📤 Dosya okuma başladı...');
+    };
+    reader.onloadend = () => {
+        console.log('✅ Dosya okuma tamamlandı');
+    };
+    
+    try {
+        reader.readAsDataURL(file);
+    } catch (error) {
+        console.error('❌ readAsDataURL hatası:', error);
+        alert('Fotoğraf okunurken bir hata oluştu. Lütfen tekrar deneyin.');
+        if (shareBtn) {
+            shareBtn.disabled = false;
+            shareBtn.textContent = originalText;
+        }
+    }
 }
 
 // Profil fotoğraf input değişikliğinde dosya adını göster
@@ -3126,51 +3166,65 @@ function shareDiscoverNote() {
     }
     
     const saveNote = (imageData) => {
-        const notes = getProfileNotes();
-        const newNote = {
-            id: Date.now().toString(),
-            userId: currentUser.id,
-            userName: currentUser.name,
-            userPhoto: getProfilePhoto() || '',
-            note: noteText || '',
-            timestamp: new Date().toISOString(),
-            likes: [],
-            comments: [],
-            isPublic: true, // Keşfet'te paylaşılanlar herkese açık
-            image: imageData || '',
-            type: 'discover' // Keşfet notu
-        };
-        
-        notes.unshift(newNote);
-        // Son 50 notu tut
-        if (notes.length > 50) {
-            notes.splice(50);
-        }
-        
-        localStorage.setItem('profileNotes', JSON.stringify(notes));
-        
-        // Firebase'e de kaydet (farklı cihazlardan görünsün)
-        saveProfileNotesToFirebase(notes);
-        
-        if (noteInput) noteInput.value = '';
-        if (imageInput) {
-            imageInput.value = '';
-            // Dosya adını temizle
-            const fileNameSpan = document.getElementById('discoverNoteImageFileName');
-            if (fileNameSpan) {
-                fileNameSpan.style.display = 'none';
-                fileNameSpan.textContent = '';
+        try {
+            console.log('💾 Keşfet notu kaydediliyor...');
+            const notes = getProfileNotes();
+            const newNote = {
+                id: Date.now().toString(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userPhoto: getProfilePhoto() || '',
+                note: noteText || '',
+                timestamp: new Date().toISOString(),
+                likes: [],
+                comments: [],
+                isPublic: true, // Keşfet'te paylaşılanlar herkese açık
+                image: imageData || '',
+                type: 'discover' // Keşfet notu
+            };
+            
+            notes.unshift(newNote);
+            // Son 50 notu tut
+            if (notes.length > 50) {
+                notes.splice(50);
+            }
+            
+            localStorage.setItem('profileNotes', JSON.stringify(notes));
+            console.log('✅ localStorage\'a kaydedildi (keşfet)');
+            
+            // Firebase'e de kaydet (async - beklemeden devam et)
+            saveProfileNotesToFirebase(notes);
+            
+            // UI'ı temizle
+            if (noteInput) noteInput.value = '';
+            if (imageInput) {
+                imageInput.value = '';
+                // Dosya adını temizle
+                const fileNameSpan = document.getElementById('discoverNoteImageFileName');
+                if (fileNameSpan) {
+                    fileNameSpan.style.display = 'none';
+                    fileNameSpan.textContent = '';
+                }
+            }
+            
+            // Button'u geri getir (Firebase beklenmeden)
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
+            }
+            
+            // Notları yükle
+            loadDiscoverNotes();
+            console.log('✅ İşlem tamamlandı (keşfet)');
+            alert('✅ Notunuz keşfet\'te paylaşıldı! Tüm cihazlardan görünecek.');
+        } catch (error) {
+            console.error('❌ saveNote içinde hata (keşfet):', error);
+            alert('Kayıt sırasında bir hata oluştu: ' + error.message);
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
             }
         }
-        
-        // Button'u geri getir
-        if (shareBtn) {
-            shareBtn.disabled = false;
-            shareBtn.textContent = originalText;
-        }
-        
-        loadDiscoverNotes();
-        alert('✅ Notunuz keşfet\'te paylaşıldı! Tüm cihazlardan görünecek.');
     };
     
     if (file) {
@@ -3184,11 +3238,47 @@ function shareDiscoverNote() {
             }
         };
         reader.onload = (e) => {
-            saveNote(e.target.result);
+            try {
+                console.log('✅ Dosya okundu (keşfet), kaydediliyor...');
+                saveNote(e.target.result);
+            } catch (error) {
+                console.error('❌ saveNote hatası (keşfet):', error);
+                alert('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+                if (shareBtn) {
+                    shareBtn.disabled = false;
+                    shareBtn.textContent = originalText;
+                }
+            }
         };
-        reader.readAsDataURL(file);
+        reader.onloadstart = () => {
+            console.log('📤 Dosya okuma başladı (keşfet)...');
+        };
+        reader.onloadend = () => {
+            console.log('✅ Dosya okuma tamamlandı (keşfet)');
+        };
+        
+        try {
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('❌ readAsDataURL hatası (keşfet):', error);
+            alert('Fotoğraf okunurken bir hata oluştu. Lütfen tekrar deneyin.');
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
+            }
+        }
     } else {
-        saveNote('');
+        try {
+            console.log('📝 Sadece metin kaydediliyor...');
+            saveNote('');
+        } catch (error) {
+            console.error('❌ saveNote hatası (metin):', error);
+            alert('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
+            }
+        }
     }
 }
 
