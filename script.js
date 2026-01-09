@@ -2895,6 +2895,9 @@ function setupProfile() {
         shareNoteBtn.addEventListener('click', shareProfileNote);
     }
     
+    // Profil fotoğraf input event listener'ını ayarla
+    setupProfileNoteImageInput();
+    
     // Profil verilerini yükle
     loadProfile();
     loadProfileNotes();
@@ -2946,19 +2949,44 @@ function getProfilePhoto() {
 }
 
 function shareProfileNote() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        alert('Lütfen önce giriş yapın!');
+        return;
+    }
     
     const imageInput = document.getElementById('profileNoteImageInput');
-    const file = imageInput && imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+    if (!imageInput) {
+        console.error('❌ Fotoğraf input bulunamadı');
+        alert('Bir hata oluştu. Sayfayı yenileyin ve tekrar deneyin.');
+        return;
+    }
+    
+    const file = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
     
     // Fotoğraf zorunlu
     if (!file) {
         alert('Lütfen bir fotoğraf seçin! Profilde sadece fotoğraf paylaşabilirsiniz.');
+        // Input'u tetikle
+        imageInput.click();
+        return;
+    }
+    
+    // Dosya boyutu kontrolü (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('Fotoğraf boyutu çok büyük! Lütfen 10MB\'dan küçük bir fotoğraf seçin.');
         return;
     }
     
     const noteInput = document.getElementById('profileNoteInput');
     const noteText = noteInput ? noteInput.value.trim() : '';
+    
+    // Loading göster
+    const shareBtn = document.getElementById('shareNoteBtn');
+    const originalText = shareBtn ? shareBtn.textContent : '';
+    if (shareBtn) {
+        shareBtn.disabled = true;
+        shareBtn.textContent = 'Yükleniyor...';
+    }
     
     const saveNote = (imageData) => {
         const notes = getProfileNotes();
@@ -2988,32 +3016,113 @@ function shareProfileNote() {
         saveProfileNotesToFirebase(notes);
         
         if (noteInput) noteInput.value = '';
-        if (imageInput) imageInput.value = '';
+        if (imageInput) {
+            imageInput.value = '';
+            // Dosya adını temizle
+            const fileNameSpan = document.getElementById('profileNoteImageFileName');
+            if (fileNameSpan) {
+                fileNameSpan.style.display = 'none';
+                fileNameSpan.textContent = '';
+            }
+        }
+        
+        // Button'u geri getir
+        if (shareBtn) {
+            shareBtn.disabled = false;
+            shareBtn.textContent = originalText;
+        }
         
         loadProfileNotes();
-        alert('Fotoğrafınız paylaşıldı!');
+        alert('✅ Fotoğrafınız paylaşıldı!');
     };
     
     const reader = new FileReader();
+    reader.onerror = (error) => {
+        console.error('❌ Dosya okuma hatası:', error);
+        alert('Fotoğraf okunurken bir hata oluştu. Lütfen tekrar deneyin.');
+        if (shareBtn) {
+            shareBtn.disabled = false;
+            shareBtn.textContent = originalText;
+        }
+    };
     reader.onload = (e) => {
         saveNote(e.target.result);
     };
     reader.readAsDataURL(file);
 }
 
+// Profil fotoğraf input değişikliğinde dosya adını göster
+function setupProfileNoteImageInput() {
+    const imageInput = document.getElementById('profileNoteImageInput');
+    if (imageInput) {
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+            const fileNameSpan = document.getElementById('profileNoteImageFileName');
+            if (file && fileNameSpan) {
+                fileNameSpan.textContent = '✓ Seçilen: ' + file.name;
+                fileNameSpan.style.display = 'block';
+            } else if (fileNameSpan) {
+                fileNameSpan.style.display = 'none';
+                fileNameSpan.textContent = '';
+            }
+        });
+    }
+}
+
+// Keşfet fotoğraf input değişikliğinde dosya adını göster
+function setupDiscoverNoteImageInput() {
+    const imageInput = document.getElementById('discoverNoteImageInput');
+    if (imageInput) {
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+            const fileNameSpan = document.getElementById('discoverNoteImageFileName');
+            if (file && fileNameSpan) {
+                fileNameSpan.textContent = '✓ Seçilen: ' + file.name;
+                fileNameSpan.style.display = 'block';
+            } else if (fileNameSpan) {
+                fileNameSpan.style.display = 'none';
+                fileNameSpan.textContent = '';
+            }
+        });
+    }
+}
+
 // Keşfet'te not paylaşma (yazı opsiyonel, fotoğraf opsiyonel)
 function shareDiscoverNote() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        alert('Lütfen önce giriş yapın!');
+        return;
+    }
     
     const noteInput = document.getElementById('discoverNoteInput');
     const noteText = noteInput ? noteInput.value.trim() : '';
     const imageInput = document.getElementById('discoverNoteImageInput');
-    const file = imageInput && imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+    if (!imageInput) {
+        console.error('❌ Fotoğraf input bulunamadı');
+        alert('Bir hata oluştu. Sayfayı yenileyin ve tekrar deneyin.');
+        return;
+    }
+    
+    const file = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
     
     // En az bir şey olmalı (yazı veya fotoğraf)
     if (!noteText && !file) {
         alert('Lütfen bir not yazın veya fotoğraf ekleyin!');
         return;
+    }
+    
+    // Dosya boyutu kontrolü (10MB limit)
+    if (file && file.size > 10 * 1024 * 1024) {
+        alert('Fotoğraf boyutu çok büyük! Lütfen 10MB\'dan küçük bir fotoğraf seçin.');
+        return;
+    }
+    
+    // Loading göster
+    const shareBtn = document.getElementById('shareDiscoverNoteBtn');
+    const originalText = shareBtn ? shareBtn.textContent : '';
+    if (shareBtn) {
+        shareBtn.disabled = true;
+        shareBtn.textContent = 'Yükleniyor...';
     }
     
     const saveNote = (imageData) => {
@@ -3044,14 +3153,36 @@ function shareDiscoverNote() {
         saveProfileNotesToFirebase(notes);
         
         if (noteInput) noteInput.value = '';
-        if (imageInput) imageInput.value = '';
+        if (imageInput) {
+            imageInput.value = '';
+            // Dosya adını temizle
+            const fileNameSpan = document.getElementById('discoverNoteImageFileName');
+            if (fileNameSpan) {
+                fileNameSpan.style.display = 'none';
+                fileNameSpan.textContent = '';
+            }
+        }
+        
+        // Button'u geri getir
+        if (shareBtn) {
+            shareBtn.disabled = false;
+            shareBtn.textContent = originalText;
+        }
         
         loadDiscoverNotes();
-        alert('Notunuz keşfet\'te paylaşıldı! Tüm cihazlardan görünecek.');
+        alert('✅ Notunuz keşfet\'te paylaşıldı! Tüm cihazlardan görünecek.');
     };
     
     if (file) {
         const reader = new FileReader();
+        reader.onerror = (error) => {
+            console.error('❌ Dosya okuma hatası:', error);
+            alert('Fotoğraf okunurken bir hata oluştu. Lütfen tekrar deneyin.');
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.textContent = originalText;
+            }
+        };
         reader.onload = (e) => {
             saveNote(e.target.result);
         };
@@ -3210,6 +3341,9 @@ function setupDiscover() {
     if (shareDiscoverNoteBtn) {
         shareDiscoverNoteBtn.addEventListener('click', shareDiscoverNote);
     }
+    
+    // Keşfet fotoğraf input event listener'ını ayarla
+    setupDiscoverNoteImageInput();
     
     // Notları senkronize et (Firebase'den yükle)
     syncProfileNotes();

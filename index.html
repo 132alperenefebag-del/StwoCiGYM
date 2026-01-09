@@ -549,11 +549,12 @@
                             Profilinizde fotoğraf paylaşabilirsiniz. Fotoğraf zorunludur, isterseniz fotoğrafınıza açıklama ekleyebilirsiniz.
                         </p>
                         <div class="form-group">
-                            <label for="profileNoteImageInput" style="display: block; margin-bottom: 10px; font-weight: 600;">
-                                Fotoğraf Seç (Zorunlu):
+                            <label for="profileNoteImageInput" class="file-input-label" style="display: block; margin-bottom: 15px;">
+                                <span class="file-input-button">📷 Fotoğraf Seç (Zorunlu)</span>
+                                <input type="file" id="profileNoteImageInput" accept="image/*" capture="environment" required style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;">
+                                <span id="profileNoteImageFileName" class="file-input-name" style="display: none; margin-top: 8px; font-size: 0.9rem; color: var(--primary-color);"></span>
                             </label>
-                            <input type="file" id="profileNoteImageInput" accept="image/*" required style="margin-bottom: 15px;">
-                            <textarea id="profileNoteInput" rows="3" placeholder="Fotoğrafınıza açıklama ekleyin (opsiyonel)..."></textarea>
+                            <textarea id="profileNoteInput" rows="3" placeholder="Fotoğrafınıza açıklama ekleyin (opsiyonel)..." style="width: 100%; padding: 12px; border: 2px solid var(--light-color); border-radius: 8px; font-size: 1rem; resize: vertical; min-height: 80px;"></textarea>
                         </div>
                         <button class="btn-primary" id="shareNoteBtn">Fotoğraf Paylaş</button>
                         
@@ -579,9 +580,10 @@
                             <textarea id="discoverNoteInput" rows="4" placeholder="Ne düşünüyorsunuz? Durumunuzu paylaşın..."></textarea>
                         </div>
                         <div class="profile-note-options">
-                            <label class="note-image-label">
-                                Fotoğraf ekle (opsiyonel):
-                                <input type="file" id="discoverNoteImageInput" accept="image/*">
+                            <label for="discoverNoteImageInput" class="file-input-label" style="display: block; width: 100%;">
+                                <span class="file-input-button" style="background: var(--light-color); color: var(--dark-color);">📷 Fotoğraf Ekle (Opsiyonel)</span>
+                                <input type="file" id="discoverNoteImageInput" accept="image/*" capture="environment" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;">
+                                <span id="discoverNoteImageFileName" class="file-input-name" style="display: none; margin-top: 8px; font-size: 0.9rem; color: var(--primary-color);"></span>
                             </label>
                         </div>
                         <button class="btn-primary" id="shareDiscoverNoteBtn">Keşfet'te Paylaş</button>

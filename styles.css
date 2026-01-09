@@ -3432,6 +3432,73 @@ body.dark-theme .friend-notes-section h4 {
     font-size: 0.85rem;
 }
 
+/* Mobil uyumlu file input stilleri */
+.file-input-label {
+    position: relative;
+    cursor: pointer;
+    display: inline-block;
+    width: 100%;
+}
+
+.file-input-button {
+    display: inline-block;
+    padding: 12px 20px;
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-input-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.file-input-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.file-input-name {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+/* Mobil için özel stiller */
+@media (max-width: 768px) {
+    .file-input-button {
+        padding: 14px 20px;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+    
+    input[type="file"] {
+        font-size: 16px !important; /* iOS zoom'u önlemek için */
+    }
+    
+    textarea {
+        font-size: 16px !important; /* iOS zoom'u önlemek için */
+    }
+}
+
 body.dark-theme .profile-note-options {
     color: #cbd5e1;
 }
