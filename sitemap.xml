@@ -19,4 +19,12 @@
         <priority>1.0</priority>
     </url>
     
+    <!-- Google Doğrulama Dosyası -->
+    <url>
+        <loc>https://stwo-ci-gym.vercel.app/googlea9843aec72504e3b.html</loc>
+        <lastmod>2024-12-19</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.1</priority>
+    </url>
+    
 </urlset>
